@@ -17,7 +17,6 @@ def var_get_info(str_in):
            replace_in_bracket(var_init, '{', '}', ',', False), \
            replace_in_bracket(var_ev, '{', '}', ',', False)
 
-
 def replace_in_bracket(str_in, left, right, replace, forward=True):
     count, new_str = 0, ''
     for index in range(len(str_in)):
@@ -32,7 +31,6 @@ def replace_in_bracket(str_in, left, right, replace, forward=True):
             new_str += replace if str_in[index] == '$' and count != 0   \
             else str_in[index]
     return new_str
-
 
 def check_keyword(string, keyword):
     upper_str = string.upper()
@@ -71,11 +69,3 @@ def multi_var(str_in):
         val = [i.strip() for i in val.split(',')]
     val_len = len(val)
     return val, val_len
-
-def array_in(name, init, ev):
-    return 
-
-if __name__ == '__main__':
-    str_in = 'b_block_detected , init = {a, 4, {b -> 4, c -> 5}} , ev = {1->3, others->init } '
-    # print(replace_in_bracket(str_in,'{','}',','))
-    print(var_get_info(str_in))

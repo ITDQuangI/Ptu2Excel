@@ -31,7 +31,7 @@ class TestCase:
         self.summary = {'TYPE': 'NA', 'FUNC': 'NA', 'VARI': 'NA', 'REQI': 'NA'}
         self.comments = list()
         self.elements = list()
-        self.input, self.output = '', ''
+        self.input, self.output, self.setup = '', '', ''
 
     def add_info(self, key, content):
         self.summary[key] = content
@@ -48,6 +48,19 @@ class TestCase:
         tc.input = self.input
         tc.output = self.output
 
+    def mapping(self):
+        self.table = {
+            'Name': self.name,                      \
+            'Type': self.summary['TYPE'],           \
+            'Variant': self.summary['VARI'],        \
+            'Function': self.summary['FUNC'],       \
+            'Requirement': self.summary['REQI'],    \
+            'Init': self.input,                     \
+            'Setup': self.setup,                    \
+            'Expected': self.output,                \
+            'Comment': '\n'.join(self.comments)     \
+        }
+
     def process(self):
         cond = self.elements[0].multi
         flag = True if cond != [] else False
@@ -62,6 +75,7 @@ class TestCase:
                 for y in cond:
                     tc.input += var_in(y[0], y[1][x]) + '\n'
                     tc.output += var_out(y[0], y[2][x]) + '\n'
+                tc.mapping()
                 tc_list.append(tc)
             del self.elements
             return tc_list
@@ -75,8 +89,10 @@ class TestCase:
                     if self.elements[i].init != '' else 'No input'
                 self.output += self.elements[i].ev + '\n'  \
                     if self.elements[i].ev != '' else 'No output'
+            self.mapping()
             del self.elements
             return [self]
+
 
 class Script:
     'General class'
@@ -87,14 +103,25 @@ class Script:
     def self_check(self):
         pass
 
-    def write_to_excel(self):
-        pass
+    def get_content(self, key_list):
+        result = list()
+        key_len = len(key_list)
+        for ser in self.services:
+            for tc in self.services[ser]:
+                temp = list()
+                for key in key_list:
+                    multi = [ikey.strip() for ikey in key.split('+')]
+                    multi_cont = [tc.table.get(ikey, ikey) for ikey in multi]
+                    temp.append('\n'.join(multi_cont))
+                result.append(temp)
+        return result
 
 class Parse:
     'Parsing PTU syntax'
     def __init__(self, content):
         self.content = content
         self.services = dict()
+        self.initialize()
 
     def initialize(self):
         in_element = False
@@ -140,7 +167,7 @@ class Parse:
 class Cache:
     def __init__(self):
         self.input = defaultdict(list)
-        self.init, self.ev = '', ''
+        self.init, self.ev, self.setup = '', '', ''
         self.multi = list()
 
     def process(self):
@@ -161,7 +188,6 @@ class Cache:
             name, para, ret, time = stub_get_info(stub)
             self.init += stub_in(name, para, ret, time) + '\n'
             self.ev += stub_out(name, para, ret, time) + '\n'
-
 
     def __array_handle(self):
         for array in self.input['ARRAY']:
@@ -189,7 +215,6 @@ class Cache:
             else:
                 self.init += var_in(name, init) + '\n'
                 self.ev += var_out(name, ev) + '\n'
-
 
     def __setup_handle(self):
         pass
