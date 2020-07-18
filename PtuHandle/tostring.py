@@ -36,3 +36,6 @@ def var_in(name, init):
 
 def var_out(name, ev):
     return 'Variable: ' + name + ' = ' + ev
+
+def setup_call(func):
+    return 'Call function ' + func

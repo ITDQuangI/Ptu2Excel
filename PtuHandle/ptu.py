@@ -1,4 +1,5 @@
 from collections import defaultdict
+from PtuHandle.minorcheck import check_name, check_setup, check_prefix
 from PtuHandle.strstub import stub_get_info, stub_get_calltime
 from PtuHandle.strvar import var_get_info, multi_var
 from PtuHandle.tostring import               \
@@ -6,7 +7,8 @@ from PtuHandle.tostring import               \
                     stub_in, stub_out,       \
                     array_in, array_out,     \
                     struct_in, struct_out,   \
-                    var_in, var_out          \
+                    var_in, var_out,         \
+                    setup_call               \
                     )
 
 keywords = [
@@ -47,6 +49,7 @@ class TestCase:
         tc.comments = self.comments
         tc.input = self.input
         tc.output = self.output
+        tc.setup = self.setup
 
     def mapping(self):
         self.table = {
@@ -69,6 +72,7 @@ class TestCase:
             tc_list = list()
             self.input = self.elements[0].init
             self.output = self.elements[0].ev
+            self.setup = self.elements[0].setup
             for x in range(num_tc):
                 tc = TestCase(self.name + '_' + str(x + 1))
                 self.copy_tc(tc)
@@ -83,8 +87,11 @@ class TestCase:
             num_ele = len(self.elements)
             for i in range(num_ele):
                 step = 'Step ' + str(i + 1) + ':\n'
+                self.setup += step if num_ele > 1 else ''
                 self.input += step if num_ele > 1 else ''
                 self.output += step if num_ele > 1 else ''
+                self.setup += self.elements[i].setup + '\n' \
+                    if self.elements[i].setup != '' else 'No setup'
                 self.input += self.elements[i].init + '\n' \
                     if self.elements[i].init != '' else 'No input'
                 self.output += self.elements[i].ev + '\n'  \
@@ -101,11 +108,21 @@ class Script:
         self.services = services
 
     def self_check(self):
-        pass
+        with open('TestCaseLog.txt', 'w') as f:
+            for ser in self.services:
+                for tc in self.services[ser]:
+                    e1 = check_name(ser, tc.name)
+                    e2 = check_setup(ser, tc.setup)
+                    e3 = check_prefix(ser, tc.name, 'UT_')
+                    if any([e1, e2, e3]):
+                        f.write('\n' + tc.name + ':\n')
+                        f.write(e1)
+                        f.write(e2)
+                        f.write(e3)
+
 
     def get_content(self, key_list):
         result = list()
-        key_len = len(key_list)
         for ser in self.services:
             for tc in self.services[ser]:
                 temp = list()
@@ -157,6 +174,8 @@ class Parse:
                     del test_case
                 elif end_state == 'ENDSERVICE':
                     self.services[current_service] = tcs_list
+                else:
+                    continue
             else:
                 continue
 
@@ -217,4 +236,6 @@ class Cache:
                 self.ev += var_out(name, ev) + '\n'
 
     def __setup_handle(self):
-        pass
+        for setup in self.input['SETUP']:
+            func = setup.strip(';').split('=')[-1].strip()
+            self.setup += setup_call(func)
